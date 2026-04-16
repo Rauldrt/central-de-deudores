@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import PeopleDirectoryPage from './PeopleDirectoryPage';
 import PersonPage from './PersonPage';
+import MinerPage from './MinerPage';
 import type { DashboardData } from './types';
 import {
   type LegislatorWithSlug,
@@ -118,6 +119,10 @@ export default function App({ initialPathname, initialSearch }: AppProps) {
       latestMonthLabel: formatMonthLabel(latestMonth),
     };
   }, [dbData, politicosData, judicialData]);
+
+  if (pathname === '/miner') {
+    return <MinerPage />;
+  }
 
   if (personSlug) {
     if (person) {
