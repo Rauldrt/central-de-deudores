@@ -216,7 +216,7 @@ export default function App({ initialPathname, initialSearch }: AppProps) {
           </div>
         </section>
 
-        <section id="explorador" className="h-screen w-full border-b border-gray-200 bg-gray-100">
+        <section id="explorador" className="h-[90vh] min-h-[700px] w-full border-b border-gray-200 bg-gray-100 flex flex-col">
           {dbData && politicosData && judicialData ? (
             <Dashboard dbData={dbData} politicosData={politicosData} judicialData={judicialData} />
           ) : (
@@ -230,49 +230,17 @@ export default function App({ initialPathname, initialSearch }: AppProps) {
       <footer className="border-t border-gray-200 bg-white">
         <div className="mx-auto grid w-full max-w-6xl gap-6 px-6 py-10 text-sm text-gray-700 md:grid-cols-2">
           <div>
-            <h2 className="mb-2 text-base font-bold text-gray-900">About</h2>
+            <h2 className="mb-2 text-base font-bold text-gray-900">Central de Deudores</h2>
             <p className="leading-relaxed">
-              Proyecto civico para facilitar la lectura publica de datos financieros de funcionarios y legisladores,
-              con foco en transparencia y comparacion historica.
+              Herramienta cívica para facilitar la consulta y lectura pública del historial crediticio de cualquier persona o entidad en la República Argentina.
             </p>
           </div>
           <div className="md:text-right">
-            <h2 className="mb-2 text-base font-bold text-gray-900">Repositorio</h2>
-            <a
-              href="https://github.com/seppo0010/gastos-congresistas"
-              target="_blank"
-              rel="noreferrer"
-              className="font-semibold text-blue-700 underline-offset-4 transition hover:text-blue-800 hover:underline"
-            >
-              github.com/seppo0010/gastos-congresistas
-            </a>
-            <div className="mt-3 space-y-1 text-xs text-gray-600">
-              <p>
-                Autor: Sebastian Waisbrot (
-                <a
-                  href="https://github.com/seppo0010"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-700 underline-offset-4 transition hover:text-blue-800 hover:underline"
-                >
-                  seppo0010
-                </a>
-                )
-              </p>
-              <p>
-                Andres Snitcofsky (diseno, viz y ux):
-                {' '}
-                <a
-                  href="https://visualizando.ar"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-700 underline-offset-4 transition hover:text-blue-800 hover:underline"
-                >
-                  visualizando.ar
-                </a>
-              </p>
-            </div>
-            <p className="mt-3 text-xs text-gray-500">Hecho para exploracion publica y periodismo de datos.</p>
+            <h2 className="mb-2 text-base font-bold text-gray-900">Origen de los Datos</h2>
+            <p className="leading-relaxed text-xs">
+              Los datos se consultan en tiempo real hacia la API pública oficial de la Central de Deudores del Banco Central de la República Argentina (BCRA).
+            </p>
+            <p className="mt-3 text-xs text-gray-500">Desarrollado para exploración pública y transparencia financiera.</p>
           </div>
         </div>
       </footer>

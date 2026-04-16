@@ -140,10 +140,20 @@ export default function LegislatorSelector({
       });
   }, [legisladores, debouncedSearchTerm, positionFilter, provinceFilter, partyFilter, unitFilter, cargoApnFilter, cargoJudicialFilter, camaraFilter, creditFilter, levelChangeFilter, familiaresFilter, situacionFilter, selectedIds, sortOrder, debtStats]);
 
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
   return (
     <div className="w-full md:w-80 h-full flex flex-col border-r border-gray-200 bg-white">
-      <div className="p-4 border-b">
-        <h2 className="font-bold text-gray-800">Funcionarios ({filteredAndSorted.length})</h2>
+      <div className="p-4 border-b shrink-0 flex flex-col overflow-y-auto max-h-[65vh] md:max-h-none md:overflow-visible">
+        <div className="flex justify-between items-center shrink-0">
+          <h2 className="font-bold text-gray-800">Funcionarios ({filteredAndSorted.length})</h2>
+          <button 
+            className="md:hidden text-xs bg-gray-100 px-2 py-1 rounded text-gray-700 font-semibold"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+          >
+            {showMobileFilters ? 'Ocultar Filtros' : 'Filtros'}
+          </button>
+        </div>
         <p className="text-xs text-gray-500 mt-0.5 leading-snug hidden md:block">Deuda en el BCRA · hacé click para ver el historial</p>
         <input
           className="w-full mt-2 p-2 border rounded text-sm"
@@ -152,7 +162,7 @@ export default function LegislatorSelector({
           onChange={e => setSearchTerm(e.target.value)}
         />
         
-        <div className="mt-4 pt-3 border-t">
+        <div className={`mt-4 pt-3 border-t shrink-0 ${showMobileFilters ? 'block' : 'hidden md:block'}`}>
           <label htmlFor="search-cuit" className="block text-gray-600 text-xs font-semibold mb-1 flex justify-between">
             <span>Consultar otro CUIT libremente:</span>
           </label>
@@ -194,7 +204,7 @@ export default function LegislatorSelector({
           {bcraError && <p className="text-red-600 mt-1 text-xs">{bcraError}</p>}
         </div>
 
-        <div className="mt-4 pt-3 border-t space-y-2 text-sm">
+        <div className={`mt-4 pt-3 border-t space-y-2 text-sm ${showMobileFilters ? 'block' : 'hidden md:block'}`}>
           <div>
             <span className="block text-gray-600 text-xs font-semibold mb-1">Orden</span>
             <div className="flex gap-1">

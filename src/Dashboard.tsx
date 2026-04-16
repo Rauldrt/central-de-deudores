@@ -184,7 +184,7 @@ export default function Dashboard({ dbData, politicosData, judicialData }: Dashb
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-100 font-sans overflow-hidden relative">
+    <div className="flex flex-col md:flex-row h-full w-full bg-gray-100 font-sans overflow-hidden relative">
       <div className="md:hidden absolute top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 px-3 py-2">
           <div className="flex items-center justify-between gap-2">
             <button
