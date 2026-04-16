@@ -279,15 +279,16 @@ export default function LegislatorSelector({
             </select>
           </div>
 
+          <div>
+            <label className="block text-gray-500 text-[10px] uppercase font-bold mb-1">Provincia</label>
+            <select value={provinceFilter} onChange={e => setProvinceFilter(e.target.value)} className="w-full p-2 py-1.5 border border-gray-300 rounded shadow-sm bg-white text-gray-700 text-sm">
+              <option value="todas">Todas</option>
+              {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+
           {positionFilter === 'legisladores' && (
             <>
-              <div>
-                <label className="block text-gray-500 text-[10px] uppercase font-bold mb-1">Provincia</label>
-                <select value={provinceFilter} onChange={e => setProvinceFilter(e.target.value)} className="w-full p-2 py-1.5 border border-gray-300 rounded shadow-sm bg-white text-gray-700 text-sm">
-                  <option value="todas">Todas</option>
-                  {provinces.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
               <div>
                 <label className="block text-gray-500 text-[10px] uppercase font-bold mb-1">Bloque</label>
                 <select value={partyFilter} onChange={e => setPartyFilter(e.target.value)} className="w-full p-2 py-1.5 border border-gray-300 rounded shadow-sm bg-white text-gray-700 text-sm">
