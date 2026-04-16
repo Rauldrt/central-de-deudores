@@ -144,9 +144,8 @@ export default function Dashboard({ dbData, politicosData, judicialData }: Dashb
       posthog?.capture('legislator_selected', { nombre: lWithSlug.nombre, poder: lWithSlug.poder, cuit: lWithSlug.cuit, total_selected: selected.length + 1 });
     }
 
-    if (isMobile && selectionChanged) {
-      setMobileView('chart');
-    }
+    // Eliminar auto-apertura del gráfico
+    // if (isMobile && selectionChanged) { ... }
     // Clean up hiddenIds for removed legislator
     if (selected.some(l => l.cuit === lWithSlug.cuit)) {
       setHiddenIds(prev => { const next = new Set(prev); next.delete(lWithSlug.cuit); return next; });
@@ -183,46 +182,15 @@ export default function Dashboard({ dbData, politicosData, judicialData }: Dashb
     }
   };
 
+  // Usaremos 'mobileView' renombrado espiritualmente a 'isChartOpen'
+  const isChartOpen = mobileView === 'chart';
+  const setIsChartOpen = (isOpen: boolean) => setMobileView(isOpen ? 'chart' : 'list');
+
   return (
-    <div className="flex flex-col md:flex-row h-full w-full bg-gray-100 font-sans overflow-hidden relative">
-      <div className="md:hidden absolute top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <button
-              onClick={() => setMobileView(v => v === 'list' ? 'chart' : 'list')}
-              className="text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-3 py-1.5 transition-colors"
-            >
-              {mobileView === 'list' ? 'Grafico comparativo >' : '< Seleccionar funcionarios'}
-            </button>
-
-            {mobileView === 'chart' && (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setShowHelp(true)}
-                  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                  title="Ayuda"
-                >
-                  <HelpCircle size={18} />
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                  title="Compartir"
-                >
-                  <Share2 size={18} />
-                </button>
-                <button
-                  onClick={() => debtChartRef.current?.openExportMenu()}
-                  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                  title="Exportar imagen"
-                >
-                  <Camera size={18} />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-      <div className={`absolute inset-0 z-20 w-full h-full transition-transform duration-300 ease-in-out md:relative md:z-0 md:w-auto md:translate-x-0 ${mobileView === 'list' ? 'translate-x-0' : '-translate-x-full'} pt-14 md:pt-0`}>
+    <div className="flex flex-col h-full w-full bg-gray-100 font-sans overflow-hidden relative">
+      
+      {/* Principal Vista de Filtros y Tabla */}
+      <div className="flex-1 w-full h-full overflow-hidden">
         <LegislatorSelector 
           legisladores={legisladores} 
           onSelect={handleSelect} 
@@ -231,35 +199,64 @@ export default function Dashboard({ dbData, politicosData, judicialData }: Dashb
         />
       </div>
 
-      <div className={`absolute inset-0 z-10 w-full h-full transition-transform duration-300 ease-in-out md:relative md:z-0 md:flex-1 md:translate-x-0 ${mobileView === 'chart' ? 'translate-x-0' : 'translate-x-full'} pt-14 md:pt-0`}>
-        <DebtChart
-          ref={debtChartRef}
-          legislators={selected}
-          globalMilestones={meta.hitos_globales} 
-          ipc={meta.ipc}
-          mep={meta.mep}
-          onRemove={handleSelect}
-          isMobile={isMobile}
-          copied={copied}
-          onShare={handleShare}
-          onShowHelp={() => setShowHelp(true)}
-          includeFamiliares={includeFamiliares}
-          onToggleFamiliares={() => { posthog?.capture('familiares_toggled', { enabled: !includeFamiliares }); setIncludeFamiliares(v => !v); }}
-          hiddenIds={hiddenIds}
-          onToggleVisibility={(cuit) => setHiddenIds(prev => {
-            const next = new Set(prev);
-            if (next.has(cuit)) {
-              next.delete(cuit);
-            } else {
-              next.add(cuit);
-            }
-            return next;
-          })}
-        />
-      </div>
+      {/* Botón Flotante para ver el Chart si hay seleccionados */}
+      {selected.length > 0 && !isChartOpen && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
+          <button
+            onClick={() => setIsChartOpen(true)}
+            className="shadow-xl bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full flex items-center gap-2 transition-transform transform hover:scale-105"
+          >
+            <BarChart2 size={20} />
+            Ver Gráficos ({selected.length})
+          </button>
+        </div>
+      )}
+
+      {/* Chart Modal (Full Screen) */}
+      {isChartOpen && (
+        <div className="fixed inset-0 z-[100] bg-white flex flex-col pt-safe-top">
+          {/* Header del Modal del Gráfico */}
+          <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 shrink-0 shadow-sm">
+            <button
+              onClick={() => setIsChartOpen(false)}
+              className="text-sm font-semibold text-gray-700 hover:text-gray-900 bg-white border border-gray-300 rounded-lg px-4 py-2 transition-colors flex items-center gap-2"
+            >
+              <X size={16} /> Cerrar vista gráfica
+            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowHelp(true)} className="p-2 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors" title="Ayuda"><HelpCircle size={18} /></button>
+              <button onClick={handleShare} className="p-2 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors" title="Compartir"><Share2 size={18} /></button>
+              <button onClick={() => debtChartRef.current?.openExportMenu()} className="p-2 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors" title="Exportar imagen"><Camera size={18} /></button>
+            </div>
+          </div>
+          
+          <div className="flex-1 w-full h-full overflow-hidden">
+            <DebtChart
+              ref={debtChartRef}
+              legislators={selected}
+              globalMilestones={meta.hitos_globales} 
+              ipc={meta.ipc}
+              mep={meta.mep}
+              onRemove={handleSelect}
+              isMobile={isMobile}
+              copied={copied}
+              onShare={handleShare}
+              onShowHelp={() => setShowHelp(true)}
+              includeFamiliares={includeFamiliares}
+              onToggleFamiliares={() => { posthog?.capture('familiares_toggled', { enabled: !includeFamiliares }); setIncludeFamiliares(v => !v); }}
+              hiddenIds={hiddenIds}
+              onToggleVisibility={(cuit) => setHiddenIds(prev => {
+                const next = new Set(prev);
+                next.has(cuit) ? next.delete(cuit) : next.add(cuit);
+                return next;
+              })}
+            />
+          </div>
+        </div>
+      )}
 
       {warning && (
-        <div className="absolute top-5 right-5 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg z-50">
+        <div className="absolute top-5 right-5 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg z-50 animate-bounce">
             {warning}
         </div>
       )}
