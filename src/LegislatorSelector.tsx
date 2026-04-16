@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Home, AlertCircle, X, Users, ShieldAlert, ArrowDownAZ, ArrowUpAZ, TrendingUp, BarChart2 } from 'lucide-react';
+import { Home, AlertCircle, X, Users, ShieldAlert, ArrowDownAZ, ArrowUpAZ, TrendingUp, BarChart2, Download } from 'lucide-react';
 
 import type { Legislator } from './types';
 import { COLORS } from './Colors';
@@ -136,6 +136,42 @@ export default function LegislatorSelector({
   }, [legisladores, debouncedSearchTerm, positionFilter, provinceFilter, partyFilter, unitFilter, cargoApnFilter, cargoJudicialFilter, camaraFilter, creditFilter, levelChangeFilter, familiaresFilter, situacionFilter, selectedIds, sortOrder, debtStats]);
 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  const handleExportCSV = () => {
+    const headers = [
+      "CUIT", "Nombre", "Poder", "Bloque/Partido", "Cargo/Unidad",
+      "Provincia", "Tiene Hipoteca/Garantía", "Nivel Riesgo Máx (BCRA)", "Monto Máximo"
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...filteredAndSorted.map(l => {
+        const stats = debtStats.get(l.cuit);
+        const montoMax = stats ? stats.max : 0;
+        return [
+          l.cuit,
+          `"${(l.nombre || '').replace(/"/g, '""')}"`,
+          l.poder || '',
+          `"${(l.partido || '').replace(/"/g, '""')}"`,
+          `"${(l.cargo || l.unidad || '').replace(/"/g, '""')}"`,
+          l.distrito || '',
+          l.hipoteca_bcra?.tiene ? "Si" : "No",
+          l.situacion_bcra || "",
+          Math.round(montoMax)
+        ].join(",");
+      })
+    ].join("\n");
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `central_de_deudores_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    posthog?.capture('exported_csv', { count: filteredAndSorted.length });
+  };
 
   return (
     <div className="w-full h-full flex flex-col bg-white overflow-hidden shadow-md">
@@ -325,7 +361,7 @@ export default function LegislatorSelector({
             </div>
           </div>
 
-          <div>
+          <div className="flex flex-col gap-1.5 h-full justify-end">
             <button
               onClick={() => {
                 setSearchTerm(""); setPositionFilter("todos"); setProvinceFilter("todas"); setPartyFilter("todos"); setUnitFilter("todas"); setCargoApnFilter("todos"); setCargoJudicialFilter("todos"); setCamaraFilter("todas"); setCreditFilter("todos"); setLevelChangeFilter("todos"); setFamiliaresFilter("todos"); setSituacionFilter("todos");
@@ -333,6 +369,13 @@ export default function LegislatorSelector({
               className="w-full py-1.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 shadow-sm text-xs font-bold rounded transition-colors"
             >
               Resetear
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="w-full flex justify-center items-center gap-1 py-1.5 border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 shadow-sm text-xs font-bold rounded transition-colors"
+              title="Descargar datos filtrados en CSV"
+            >
+              <Download size={12} /> CSV
             </button>
           </div>
         </div>
