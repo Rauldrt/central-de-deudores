@@ -27,8 +27,18 @@ const getDebtStats = (l: Legislator) => {
     months.add(h.fecha);
   }
 
+  let max = 0;
+  let maxDate = '';
+  for (const [date, amount] of Object.entries(monthly)) {
+    if (amount > max) {
+      max = amount;
+      maxDate = date;
+    }
+  }
+
   return {
-    max: Math.max(0, ...Object.values(monthly)),
+    max,
+    maxDate,
     avg: months.size > 0 ? total / months.size : 0
   };
 };
@@ -74,7 +84,7 @@ export default function LegislatorSelector({
   const camaras = useMemo(() => [...new Set(legisladores.filter(l => l.poder === 'judicial' && l.camara).map(l => l.camara).filter(c => (c || '').trim() !== ''))].sort(), [legisladores]);
 
   const debtStats = useMemo(() => {
-    const stats = new Map<string, { max: number; avg: number }>();
+    const stats = new Map<string, { max: number; avg: number; maxDate: string }>();
     legisladores.forEach(l => {
       stats.set(l.cuit, getDebtStats(l));
     });
@@ -140,7 +150,7 @@ export default function LegislatorSelector({
   const handleExportCSV = () => {
     const headers = [
       "CUIT", "Nombre", "Poder", "Bloque/Partido", "Cargo/Unidad",
-      "Provincia", "Tiene Hipoteca/Garantía", "Nivel Riesgo Máx (BCRA)", "Monto Máximo"
+      "Provincia", "Tiene Hipoteca/Garantía", "Nivel Riesgo Máx (BCRA)", "Monto Máximo", "Fecha Monto Máx"
     ];
 
     const csvContent = [
@@ -148,6 +158,7 @@ export default function LegislatorSelector({
       ...filteredAndSorted.map(l => {
         const stats = debtStats.get(l.cuit);
         const montoMax = stats ? stats.max : 0;
+        const maxDate = stats ? stats.maxDate : '';
         return [
           l.cuit,
           `"${(l.nombre || '').replace(/"/g, '""')}"`,
@@ -157,7 +168,8 @@ export default function LegislatorSelector({
           l.distrito || '',
           l.hipoteca_bcra?.tiene ? "Si" : "No",
           l.situacion_bcra || "",
-          Math.round(montoMax)
+          Math.round(montoMax),
+          `"${maxDate}"`
         ].join(",");
       })
     ].join("\n");
