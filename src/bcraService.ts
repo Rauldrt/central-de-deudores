@@ -1,4 +1,4 @@
-import { Legislator, DebtRecord } from './types';
+import type { Legislator, DebtRecord } from './types';
 
 export async function fetchBcraDeudas(cuit: string): Promise<Legislator> {
   const cleanCuit = cuit.replace(/\D/g, '');
