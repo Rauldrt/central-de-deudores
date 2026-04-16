@@ -19,6 +19,9 @@ export default async function handler(req, res) {
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (error) {
+    if (error.message.includes('fetch failed')) {
+       return res.status(503).json({ errorMessages: ['El servicio del BCRA se encuentra inaccesible desde la nube en este momento (WAF/Mantenimiento).'] });
+    }
     return res.status(503).json({ errorMessages: ['Error al contactar al BCRA: ' + error.message] });
   }
 }
