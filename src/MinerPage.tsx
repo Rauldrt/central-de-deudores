@@ -158,21 +158,124 @@ export default function MinerPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Limpiador básico de nombres extraídos
+  const cleanName = (nameRaw: string) => {
+    return nameRaw
+        .replace(/(?:^|\s)(?:EL|LA|AL|A LA|DEL|SE([ÑN]?)OR(?:[A])?|DR(?:[A])?|LIC(?:[A])?|ABG|DON|DOÑA|SR(?:[A])?\.?)(?=\s)/gi, '')
+        .replace(/[,()]/g, '')
+        .trim();
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    addLog(`[+] Leyendo archivo PDF: ${file.name}...`);
+    try {
+      // Importación dinámica para evitar crashear el SSR Builder (Node.js) en Vite
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf: any = await (pdfjsLib.getDocument(arrayBuffer) as any).promise;
+      
+      let fullText = "";
+      addLog(`[+] Extrayendo texto de ${pdf.numPages} páginas...`);
+      for (let i = 1; i <= pdf.numPages; i++) {
+         const page: any = await pdf.getPage(i);
+         const content: any = await page.getTextContent();
+         const pageText = content.items.map((item: any) => item.str).join(' ');
+         fullText += pageText + " ";
+      }
+
+      addLog(`[+] Buscando patrones de designación militar/burocrática...`);
+      
+      const dniRegex = /D\.?N\.?I\.?(?:\s*[Nn]?[°ºo.])?\s*([\d]{1,2}(?:\.?[\d]{3}){2}|[\d]{7,8})/g;
+      
+      let match;
+      const candidates = [];
+      const windowSize = 250; 
+
+      while ((match = dniRegex.exec(fullText)) !== null) {
+          const dniRaw = match[1];
+          const dniClean = dniRaw.replace(/\D/g, ''); 
+          if (dniClean.length > 8 || dniClean.length < 7) continue;
+
+          const matchIndex = match.index;
+          const start = Math.max(0, matchIndex - windowSize);
+          const end = Math.min(fullText.length, matchIndex + windowSize);
+          const chunk = fullText.substring(start, end).replace(/\n/g, ' '); 
+
+          // Heurística
+          const isDesignation = /des[íi]gnas[ea]|nómbras[ea]|nombrar|designar|cargo de|en su reemplazo/i.test(chunk);
+          
+          if (isDesignation) {
+              let nameExtracted = "DESCONOCIDO";
+              const textBeforeDNI = fullText.substring(start, matchIndex).replace(/\n/g, ' ').trim();
+              const wordsBefore = textBeforeDNI.split(/\s+/);
+              
+              const possibleNameArr = wordsBefore.slice(-5).join(' ');
+              const nameMatch = possibleNameArr.match(/([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ]+){1,3})/);
+              
+              if (nameMatch) {
+                  nameExtracted = cleanName(nameMatch[0]);
+              } else {
+                  nameExtracted = cleanName(wordsBefore.slice(-3).join(' '));
+              }
+
+              let cargoExtracted = "Funcionario Designado";
+              const cargoMatch = chunk.match(/cargo de\s+([A-Za-záéíóúñÁÉÍÓÚÑ\s,\.]+?(?=[\.\;]|\s+a\s+partir|\s+con\s+retenci|\s+en\s+el))/i);
+              
+              if (cargoMatch && cargoMatch[1]) {
+                  cargoExtracted = cargoMatch[1].trim().replace(/\s+/g, ' ');
+              }
+
+              candidates.push({
+                  nombre: nameExtracted.toUpperCase(),
+                  dni: dniClean,
+                  cargo: cargoExtracted
+              });
+          }
+      }
+
+      // Evitar duplicados por DNI
+      const uniqueCandidates = Array.from(new Map(candidates.map(item => [item.dni, item])).values());
+      addLog(`✨ Extracción exitosa: ${uniqueCandidates.length} designaciones encontradas.`);
+
+      if (uniqueCandidates.length > 0) {
+         const tsvData = uniqueCandidates.map(c => `${c.nombre}\t${c.dni}\t${c.cargo}`).join('\n');
+         setInputData(prev => prev.trim() ? prev + '\n' + tsvData : tsvData);
+         addLog(`[+] Completado! Datos inyectados en la tabla de extracción.`);
+      } else {
+         addLog(`[!] No se encontraron designaciones en el PDF.`);
+      }
+
+    } catch (e: any) {
+      addLog(`❌ Error procesando PDF: ${e.message}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col p-6">
-      <h1 className="text-3xl font-black text-gray-900 mb-2 uppercase">Extractor de Identidades</h1>
-      <p className="text-gray-600 mb-6">Pega aquí los datos extraídos del Boletín (Nombre, DNI, Cargo). El sistema validará los CUITs reales contra el BCRA en modo incógnito.</p>
+      <h1 className="text-3xl font-black text-gray-900 mb-2 uppercase">Extractor de Identidades OSINT</h1>
+      <p className="text-gray-600 mb-6">Pega aquí los datos extraídos o <strong>sube un Boletín en PDF</strong> para que la IA extraiga los DNI y valide los identidades reales contra el BCRA en modo incógnito.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Panel izquierdo */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Datos Crudos (Pegar de Excel)</label>
-          <p className="text-xs text-gray-500 mb-2">Formato esperado: `Nombre [TAB] DNI [TAB] Cargo`</p>
+          
+          <div className="mb-4 bg-blue-50 border border-blue-200 p-3 rounded text-sm text-blue-900">
+             <label className="block font-bold mb-1 uppercase text-xs tracking-wide">1. Procesar Boletín Oficial (PDF) Automáticamente</label>
+             <input type="file" accept=".pdf" onChange={handlePdfUpload} disabled={isMining} className="w-full text-xs" />
+          </div>
+
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">2. Datos Crudos Encontrados</label>
+          <p className="text-xs text-gray-500 mb-2">Edita manualmente o usa el extractor de PDF arriba. Formato: `Nombre [TAB] DNI [TAB] Cargo`</p>
           <textarea 
             value={inputData}
             onChange={e => setInputData(e.target.value)}
             disabled={isMining}
-            className="w-full h-64 p-3 border border-gray-300 rounded font-mono text-xs bg-gray-50 focus:bg-white"
+            className="w-full h-48 p-3 border border-gray-300 rounded font-mono text-xs bg-gray-50 focus:bg-white"
           />
           <button 
             disabled={isMining || inputData.trim() === ''}
