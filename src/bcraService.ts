@@ -10,8 +10,18 @@ export async function fetchBcraDeudas(cuit: string): Promise<Legislator> {
   const url = `https://api.bcra.gob.ar/centraldedeudores/v1.0/Deudas/Historicas/${cleanCuit}`;
 
   try {
-    const response = await fetch(url);
-    const data = await response.json();
+    let data;
+    try {
+      const response = await fetch(url);
+      data = await response.json();
+    } catch (e) {
+      console.warn("Fallo en fetch directo al BCRA (Probable Error CORS/WAF). Intentando proxy de Vercel...", e);
+      const proxyResponse = await fetch(`/api/bcra?cuit=${cleanCuit}`);
+      if (!proxyResponse.ok) {
+          throw new Error('Servicio de BCRA inalcanzable. Bloqueo de cortafuegos activo en ambas vías.');
+      }
+      data = await proxyResponse.json();
+    }
 
     if (data.status === 404 || (data.errorMessages && data.errorMessages.some((msg: string) => msg.includes('No se encontraron deudas')))) {
       // Devolver un legislador vacío sin deuda
