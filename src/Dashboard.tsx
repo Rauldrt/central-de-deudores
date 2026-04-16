@@ -3,7 +3,7 @@ import './Dashboard.css'
 import DebtChart from './DebtChart';
 import LegislatorSelector from './LegislatorSelector';
 import type { DashboardData, Legislator } from './types';
-import { Share2, HelpCircle, X, Camera } from 'lucide-react';
+import { Share2, HelpCircle, X, Camera, BarChart2 } from 'lucide-react';
 import { COLORS } from './Colors';
 import { type LegislatorWithSlug, mergeDashboardPeople } from './people';
 import { usePostHog } from '@posthog/react';
@@ -124,7 +124,6 @@ export default function Dashboard({ dbData, politicosData, judicialData }: Dashb
 
   const handleSelect = (legislator: Legislator) => {
     const lWithSlug = legislator as LegislatorWithSlug;
-    let selectionChanged = false;
 
     if (selected.some(l => l.cuit === lWithSlug.cuit)) {
       const nextSelected = selected.filter(l => l.cuit !== lWithSlug.cuit);
@@ -132,7 +131,6 @@ export default function Dashboard({ dbData, politicosData, judicialData }: Dashb
       if (isMobile && nextSelected.length === 0) {
         setMobileView('list');
       }
-      selectionChanged = true;
       posthog?.capture('legislator_removed', { nombre: lWithSlug.nombre, poder: lWithSlug.poder, cuit: lWithSlug.cuit });
     } else if (selected.length >= 4) {
       setWarning("Solo se pueden comparar hasta 4 personas");
@@ -140,12 +138,9 @@ export default function Dashboard({ dbData, politicosData, judicialData }: Dashb
       const usedColors = new Set(selected.map(l => l.color));
       const nextColor = COLORS.find(c => !usedColors.has(c)) || COLORS[selected.length % COLORS.length];
       setSelected(prev => [...prev, { ...lWithSlug, color: nextColor }]);
-      selectionChanged = true;
       posthog?.capture('legislator_selected', { nombre: lWithSlug.nombre, poder: lWithSlug.poder, cuit: lWithSlug.cuit, total_selected: selected.length + 1 });
     }
 
-    // Eliminar auto-apertura del gráfico
-    // if (isMobile && selectionChanged) { ... }
     // Clean up hiddenIds for removed legislator
     if (selected.some(l => l.cuit === lWithSlug.cuit)) {
       setHiddenIds(prev => { const next = new Set(prev); next.delete(lWithSlug.cuit); return next; });

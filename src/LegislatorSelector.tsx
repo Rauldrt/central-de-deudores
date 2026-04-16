@@ -73,11 +73,6 @@ export default function LegislatorSelector({
   const cargosJudicial = useMemo(() => [...new Set(legisladores.filter(l => l.poder === 'judicial' && l.cargo).map(l => l.cargo).filter(c => (c || '').trim() !== ''))].sort(), [legisladores]);
   const camaras = useMemo(() => [...new Set(legisladores.filter(l => l.poder === 'judicial' && l.camara).map(l => l.camara).filter(c => (c || '').trim() !== ''))].sort(), [legisladores]);
 
-  const garantiaFecha = useMemo(() => {
-    const l = legisladores.find(l => l.hipoteca_bcra.tiene && l.hipoteca_bcra.fecha);
-    return l?.hipoteca_bcra.fecha ?? null;
-  }, [legisladores]);
-
   const debtStats = useMemo(() => {
     const stats = new Map<string, { max: number; avg: number }>();
     legisladores.forEach(l => {
@@ -429,9 +424,9 @@ export default function LegislatorSelector({
                   
                   <td className="p-3 text-center">
                     <div className="flex items-center justify-center gap-1.5">
-                      {l.hipoteca_bcra.tiene ? <Home size={16} className="text-green-600" title="Garantía / Hipoteca" /> : <div className="w-4" />}
-                      {l.cambios_nivel ? <AlertCircle size={16} className="text-orange-500" title="Cambios nivel nocivos" /> : <div className="w-4" />}
-                      {l.familiares && l.familiares.length > 0 ? <Users size={16} className="text-blue-500" title="Familiares en BCRA" /> : <div className="w-4" />}
+                      {l.hipoteca_bcra.tiene ? <span title="Garantía / Hipoteca"><Home size={16} className="text-green-600" /></span> : <div className="w-4" />}
+                      {l.cambios_nivel ? <span title="Cambios nivel nocivos"><AlertCircle size={16} className="text-orange-500" /></span> : <div className="w-4" />}
+                      {l.familiares && l.familiares.length > 0 ? <span title="Familiares en BCRA"><Users size={16} className="text-blue-500" /></span> : <div className="w-4" />}
                     </div>
                   </td>
                 </tr>
