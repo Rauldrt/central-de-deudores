@@ -6,7 +6,8 @@ export async function fetchBcraDeudas(cuit: string): Promise<Legislator> {
     throw new Error('El CUIT debe tener 11 dígitos numéricos.');
   }
 
-  const url = `https://api.bcra.gob.ar/centraldedeudores/v1.0/Deudas/Historicas/${cleanCuit}`;
+  // Usamos el proxy serverless de Vercel para evadir controles CORS/WAF del BCRA
+  const url = `/api/bcra?cuit=${cleanCuit}`;
 
   try {
     const response = await fetch(url);
